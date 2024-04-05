@@ -135,5 +135,109 @@ Ambas as funções utilizam um buffer temporário de tamanho `4*1024` (4KB) para
 
 É importante notar que, no caso de descompressão, se houver algum erro durante o processo (por exemplo, uma exceção é lançada), o código simplesmente ignora o erro e retorna um array de bytes vazio. Vale ressaltar que ssso pode ser melhorado para lidar com exceções de forma mais adequada, dependendo dos requisitos do sistema.
 
+---
+
+# Interface `MultipartFile`
+
+A interface `MultipartFile` faz parte do framework Spring, especificamente do módulo Spring Web, e é usada para representar um arquivo enviado em uma solicitação HTTP multipart. É frequentemente usada em aplicativos da web para receber arquivos enviados por usuários por meio de formulários da web.
+
+Algumas características importantes da classe `MultipartFile`:
+
+1. **Representação de Arquivos**:
+   - `MultipartFile` é uma interface que representa um arquivo enviado como parte de uma solicitação multipart.
+   - Ela encapsula informações sobre o arquivo, como o nome do arquivo, o tipo de conteúdo (MIME type), tamanho do arquivo e os próprios dados do arquivo.
+
+2. **Recebimento de Arquivos em Aplicações Web**:
+   - É comumente usado em métodos de controladores Spring para receber arquivos enviados em solicitações HTTP multipart.
+   - No contexto de um aplicativo Spring MVC ou Spring Boot, você pode usá-lo como um parâmetro de método em um controlador para receber o arquivo enviado pelo cliente.
+
+3. **Métodos Principais**:
+   - `getOriginalFilename()`: Retorna o nome original do arquivo como fornecido pelo cliente.
+   - `getContentType()`: Retorna o tipo de conteúdo (MIME type) do arquivo.
+   - `getSize()`: Retorna o tamanho do arquivo em bytes.
+   - `getBytes()`: Retorna um array de bytes que contém os dados do arquivo.
+   - `transferTo(File dest)`: Salva o arquivo em disco, escrevendo-o no arquivo especificado por `dest`.
+
+4. **Tratamento de Dados de Arquivo**:
+   - A classe `MultipartFile` permite que você obtenha os dados do arquivo como um array de bytes (`getBytes()`), o que facilita o processamento e armazenamento do arquivo em diferentes formatos e locais.
+
+5. **Validação e Processamento**:
+   - Você pode validar os arquivos recebidos usando métodos fornecidos pela classe `MultipartFile`, como verificar o tamanho do arquivo ou o tipo de conteúdo.
+   - Após a validação, você pode processar o arquivo conforme necessário, como salvar no sistema de arquivos, armazenar em um banco de dados ou processá-lo de alguma outra forma.
+
+Em resumo, `MultipartFile` é uma classe fundamental no desenvolvimento de aplicativos da web Spring para receber arquivos enviados pelos clientes e trabalhar com eles de forma eficaz e segura.
+
+# Classe StorageService
+
+Este é uma classe de serviço chamada `StorageService` que esta sendo usada para manipular operações de armazenamento de imagens. 
+
+```java
+package com.api.fileuploaddownload.service;
+
+import java.io.IOException;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.api.fileuploaddownload.entity.ImageData;
+import com.api.fileuploaddownload.repository.StorageRepository;
+import com.api.fileuploaddownload.util.ImageUtils;
+
+@Service
+public class StorageService {
+
+    @Autowired
+    private StorageRepository storageRepository;
+
+    public String uploadImage(MultipartFile file) throws IOException {
+
+        ImageData imageData = storageRepository.save(ImageData.builder()
+                .name(file.getOriginalFilename())
+                .type(file.getContentType())
+                .imageData(ImageUtils.compressImage(file.getBytes())).build());
+        
+        if (imageData != null) {
+            return "file uploaded successfully : " + file.getOriginalFilename();
+        }
+        return null;
+    }
+
+
+    public byte[] downloadImage(String fileName){
+        Optional<ImageData> dbImageData = storageRepository.findByName(fileName);
+        byte[] images=ImageUtils.decompressImage(dbImageData.get().getImageData());
+        return images;
+    }
+
+}
+```
+
+Explicação do que este script faz:
+
+
+1. **Annotation `@Service`**:
+   - Indica que esta classe é um componente de serviço gerenciado pelo Spring. Isso significa que pode ser injetada em outras classes que dependem dela.
+
+2. **Injeção de Dependência `@Autowired`**:
+   - O repositório `StorageRepository` é injetado nesta classe. A `StorageRepository` é uma interface que estende `JpaRepository` ou outra interface de repositório do Spring, e é usada para interagir com o banco de dados para operações de armazenamento relacionadas às imagens.
+
+3. **Método `uploadImage`**:
+   - Recebe um objeto `MultipartFile` chamado `file`, que representa o arquivo de imagem a ser enviado.
+   - Cria um objeto `ImageData` usando um padrão de construtor de tipo de construção (`builder`). Este objeto `ImageData` representa os metadados da imagem, incluindo seu nome, tipo de conteúdo e os próprios dados da imagem (que são comprimidos usando `ImageUtils.compressImage(file.getBytes())`).
+   - Salva o objeto `ImageData` no repositório de armazenamento usando o método `save` do `storageRepository`.
+   - Retorna uma mensagem indicando que o arquivo foi enviado com sucesso, incluindo o nome original do arquivo.
+
+4. **Método `downloadImage`**:
+   - Recebe uma string `fileName`, que representa o nome do arquivo da imagem que se deseja baixar.
+   - Utiliza o repositório `storageRepository` para buscar os dados da imagem no banco de dados, usando o método `findByName`. O retorno é encapsulado em um `Optional` para lidar com casos em que o arquivo não existe no banco de dados.
+   - Descomprime os dados da imagem recuperados do banco de dados usando `ImageUtils.decompressImage`.
+   - Retorna os dados da imagem descomprimidos como um array de bytes.
+
+Esta classe serve como um intermediário entre a camada de controle (provavelmente controladores Spring) e a camada de acesso a dados (repositório de armazenamento). Ele encapsula a lógica de manipulação de imagens, como upload e download, e utiliza a injeção de dependência do Spring para interagir com o repositório de armazenamento.
+
+---
+
 # Autor
 ## Feito por: `Daniel Penelva de Andrade`
