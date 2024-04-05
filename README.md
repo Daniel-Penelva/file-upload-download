@@ -3,14 +3,36 @@
 As classes `Deflater` e `ByteArrayOutputStream` são classes importantes na plataforma Java, especialmente quando se trata de compressão de dados.
 
 ## 1. **Deflater**:
-A classe `Deflater` faz parte do pacote `java.util.zip` e é usada para realizar compressão de dados em formato zlib. Ela implementa um algoritmo de compressão sem perdas, que reduz o tamanho dos dados através da eliminação de redundâncias. Algumas características principais:
+A classe `Deflater` faz parte do pacote `java.util.zip` e é usada para realizar **compressão de dados** em formato zlib. Ela implementa um algoritmo de compressão sem perdas, que reduz o tamanho dos dados através da eliminação de redundâncias. Algumas características principais:
 
 - **Compressão de Dados**: A principal função da classe `Deflater` é comprimir dados. Ela aceita uma matriz de bytes de entrada e produz uma saída compactada.
 - **Configurações de Compressão**: Você pode configurar diferentes níveis de compressão usando as constantes fornecidas pela classe `Deflater`, como `BEST_SPEED`, `BEST_COMPRESSION` e `DEFAULT_COMPRESSION`.
 - **Fluxo de Compressão**: Ela opera em um modelo de fluxo, o que significa que você alimenta os dados para compressão e obtém os dados compactados conforme necessário, sem a necessidade de carregar todos os dados na memória de uma vez.
 
+## 2. **Inflater**:
 
-## 2. **ByteArrayOutputStream**:
+A classe `Inflater` faz parte do pacote `java.util.zip` em Java e é usada para **descomprimir dados** que foram previamente comprimidos usando o algoritmo de compressão zlib. Algumas características principais:
+
+1. **Descompressão de Dados**:
+   - `Inflater` é utilizada para descomprimir dados que foram previamente comprimidos usando o algoritmo de compressão zlib.
+   - Ela implementa o algoritmo de descompressão necessário para desfazer a compressão realizada pelo `Deflater`, que é sua contraparte na compressão de dados.
+
+2. **Funcionamento**:
+   - Você fornece os dados comprimidos para a instância de `Inflater` através do método `setInput(byte[] input)`.
+   - Em seguida, você chama o método `inflate(byte[] output)` repetidamente para extrair blocos de dados descomprimidos.
+   - Cada chamada para `inflate` processa uma parte dos dados comprimidos de entrada e produz uma parte dos dados descomprimidos de saída.
+   - Você continua chamando `inflate` até que todos os dados comprimidos tenham sido processados e os dados descomprimidos estejam totalmente disponíveis.
+
+3. **Tratamento de Dados**:
+   - `Inflater` lida com dados comprimidos em formato zlib ou formato gzip. O formato é automaticamente detectado com base nos primeiros bytes dos dados de entrada.
+   - Ela pode lidar com uma variedade de opções de formato, como dados com ou sem cabeçalhos ou com ou sem verificação de soma de verificação (checksum).
+
+4. **Controle de Fluxo**:
+   - `Inflater` opera em um modelo de fluxo, o que significa que você pode descomprimir grandes quantidades de dados sem precisar armazenar todos eles na memória ao mesmo tempo.
+   - Isso é útil para descomprimir arquivos grandes ou transmitir dados pela rede em tempo real.
+
+
+## 3. **ByteArrayOutputStream**:
 A classe `ByteArrayOutputStream` faz parte do pacote `java.io` e é usada para escrever dados em um array de bytes. Principais características incluem:
 
 - **Armazenamento de Dados em Memória**: A classe `ByteArrayOutputStream` fornece um buffer de bytes em memória, permitindo que os dados sejam gravados nele.
