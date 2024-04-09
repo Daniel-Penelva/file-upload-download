@@ -193,6 +193,8 @@ Em resumo, `MultipartFile` é uma classe fundamental no desenvolvimento de aplic
 
 Este é uma classe de serviço chamada `StorageService` que esta sendo usada para manipular operações de armazenamento de imagens. 
 
+Esta classe de serviço lida com operações de upload e download de imagens, tanto para armazenamento em um banco de dados quanto no sistema de arquivos do servidor.
+
 ```java
 package com.api.fileuploaddownload.service;
 
@@ -212,6 +214,12 @@ public class StorageService {
 
     @Autowired
     private StorageRepository storageRepository;
+
+    @Autowired
+    private FileDataRepository fileDataRepository;
+
+    // Caminho onde vai fazer o download do arquivo
+    private final String FOLDER_PATH = "C:/Projetos Spring Boot no VSCode/API-upload-download/MyFiles";
 
     public String uploadImage(MultipartFile file) throws IOException {
 
@@ -233,6 +241,31 @@ public class StorageService {
         return images;
     }
 
+
+    public String uploadImageToFileSystem(MultipartFile file) throws IOException {
+
+        String filePath=FOLDER_PATH+file.getOriginalFilename();
+
+        FileData fileData=fileDataRepository.save(FileData.builder()
+                .name(file.getOriginalFilename())
+                .type(file.getContentType())
+                .filePath(filePath).build());
+
+        file.transferTo(new File(filePath));
+
+        if (fileData != null) {
+            return "file uploaded successfully : " + filePath;
+        }
+        return null;
+    }
+
+    public byte[] downloadImageFromFileSystem(String fileName)throws IOException {
+        Optional<FileData> fileData = fileDataRepository.findByName(fileName);
+        String filePath=fileData.get().getFilePath();
+        byte[] images = Files.readAllBytes(new File(filePath).toPath());
+        return images;
+    }
+
 }
 ```
 
@@ -245,11 +278,35 @@ Explicação do que este script faz:
 2. **Injeção de Dependência `@Autowired`**:
    - O repositório `StorageRepository` é injetado nesta classe. A `StorageRepository` é uma interface que estende `JpaRepository` ou outra interface de repositório do Spring, e é usada para interagir com o banco de dados para operações de armazenamento relacionadas às imagens.
 
+3. **Váriavel de valor fixo `FOLDER_PATH`**
+   - Este define uma variável privada chamada `FOLDER_PATH` com um valor de string fixo que representa o caminho do diretório no sistema de arquivos onde os arquivos serão salvos durante o processo de upload. Neste caso, o caminho do diretório é `C:/Projetos Spring Boot no VSCode/API-upload-download/MyFiles`. Isso é usado no método `uploadImageToFileSystem` para definir o caminho do arquivo no sistema de arquivos.
+
 3. **Método `uploadImage`**:
    - Recebe um objeto `MultipartFile` chamado `file`, que representa o arquivo de imagem a ser enviado.
    - Cria um objeto `ImageData` usando um padrão de construtor de tipo de construção (`builder`). Este objeto `ImageData` representa os metadados da imagem, incluindo seu nome, tipo de conteúdo e os próprios dados da imagem (que são comprimidos usando `ImageUtils.compressImage(file.getBytes())`).
    - Salva o objeto `ImageData` no repositório de armazenamento usando o método `save` do `storageRepository`.
    - Retorna uma mensagem indicando que o arquivo foi enviado com sucesso, incluindo o nome original do arquivo.
+
+    ```java
+    public String uploadImage(MultipartFile file) throws IOException {
+
+            ImageData imageData = storageRepository.save(ImageData.builder()
+                    .name(file.getOriginalFilename())
+                    .type(file.getContentType())
+                    .imageData(ImageUtils.compressImage(file.getBytes())).build());
+            
+            if (imageData != null) {
+                return "file uploaded successfully : " + file.getOriginalFilename();
+            }
+            return null;
+        }
+    ```
+
+   - **Propósito:** Este método aceita um arquivo de imagem, o comprime, salva-o em um repositório de armazenamento e retorna uma mensagem indicando o status do upload.
+   - **Funcionamento:** 
+       - Salva os dados da imagem no repositório `storageRepository`.
+       - Comprime a imagem utilizando `ImageUtils.compressImage()`.
+       - Retorna uma mensagem de sucesso se a operação for bem-sucedida.
 
 4. **Método `downloadImage`**:
    - Recebe uma string `fileName`, que representa o nome do arquivo da imagem que se deseja baixar.
@@ -257,7 +314,90 @@ Explicação do que este script faz:
    - Descomprime os dados da imagem recuperados do banco de dados usando `ImageUtils.decompressImage`.
    - Retorna os dados da imagem descomprimidos como um array de bytes.
 
+    ```java
+    public byte[] downloadImage(String fileName){
+            Optional<ImageData> dbImageData = storageRepository.findByName(fileName);
+            byte[] images=ImageUtils.decompressImage(dbImageData.get().getImageData());
+            return images;
+        }
+    ```
+
+   - **Propósito:** Responsável por fazer o download de uma imagem armazenada no banco de dados e retornar os dados da imagem como um array de bytes.
+   - **Funcionamento:** 
+       - Busca os dados da imagem no repositório `storageRepository` com base no nome do arquivo.
+       - Descomprime os dados da imagem utilizando `ImageUtils.decompressImage()`.
+       - Retorna os dados da imagem como um array de bytes.
+
+5. **Método `uploadImageToFileSystem`**
+   - Este método é usada para salvar um arquivo no sistema de arquivos do servidor. A função recebe um parâmetro `MultipartFile` chamado `file`, que representa o arquivo a ser salvo.
+
+   - A função começa criando uma variável `filePath` que é a concatenação do caminho do diretório onde o arquivo será salvo (`FOLDER_PATH`) com o nome original do arquivo (`file.getOriginalFilename()`).
+
+   - Em seguida, a função cria um objeto `FileData` chamado `fileData` usando o método `fileDataRepository.save()`. O objeto `FileData` é usado para armazenar informações sobre o arquivo, como o nome, o tipo e o caminho do arquivo. O objeto `FileData` é criado usando o método `builder()` do `FileData` e é populado com as informações do arquivo, como o nome original do arquivo (`file.getOriginalFilename()`), o tipo de conteúdo do arquivo (`file.getContentType()`) e o caminho do arquivo (`filePath`).
+
+   - Em seguida, a função transfere o arquivo para o sistema de arquivos usando o método `file.transferTo(new File(filePath))`. Esse método transfere o conteúdo do arquivo para o arquivo no sistema de arquivos especificado pelo caminho `filePath`.
+
+   - Por fim, a função verifica se o objeto `fileData` não é nulo e retorna uma mensagem de sucesso se o arquivo foi salvo com sucesso. Se o objeto `fileData` for nulo, a função retorna `null`.
+
+   - Em resumo, o script `uploadImageToFileSystem` é uma função Java que é usada para salvar um arquivo no sistema de arquivos do servidor. A função recebe um parâmetro `MultipartFile` chamado `file`, que representa o arquivo a ser salvo. A função cria um objeto `FileData` usando o método `fileDataRepository.save()` para armazenar informações sobre o arquivo e transfere o arquivo para o sistema de arquivos usando o método `file.transferTo(new File(filePath))`. A função retorna uma mensagem de sucesso se o arquivo foi salvo com sucesso e retorna `null` se o arquivo não pôde ser salvo.
+
+    ```java
+    public String uploadImageToFileSystem(MultipartFile file) throws IOException {
+
+            String filePath=FOLDER_PATH+file.getOriginalFilename();
+
+            FileData fileData=fileDataRepository.save(FileData.builder()
+                    .name(file.getOriginalFilename())
+                    .type(file.getContentType())
+                    .filePath(filePath).build());
+
+            file.transferTo(new File(filePath));
+
+            if (fileData != null) {
+                return "file uploaded successfully : " + filePath;
+            }
+            return null;
+        }
+    ```
+   - **Propósito:** Salvar um arquivo no sistema de arquivos do servidor.
+   - **Funcionamento:** 
+       - Define o caminho do arquivo no sistema de arquivos.
+       - Salva os dados do arquivo no repositório `fileDataRepository`.
+       - Transfere o arquivo para o sistema de arquivos.
+       - Retorna uma mensagem de sucesso se a operação for bem-sucedida.
+
+6. **Método `downloadImageFromFileSystem`**
+
+   - Este método é usada para ler um arquivo do sistema de arquivos do servidor e retornar seu conteúdo como um array de bytes. A função recebe um parâmetro `String` chamado `fileName`, que representa o nome do arquivo a ser lido.
+
+   - A função começa procurando o arquivo no banco de dados usando o método `fileDataRepository.findByName(fileName)`. O método `findByName` retorna um `Optional<FileData>` que contém o objeto `FileData` associado ao arquivo com o nome especificado.
+
+   - Em seguida, a função extrai o caminho do arquivo do objeto `FileData` usando o método `fileData.get().getFilePath()`.
+
+   - Em seguida, a função lê o conteúdo do arquivo usando o método `Files.readAllBytes(new File(filePath).toPath())`. Esse método lê o conteúdo do arquivo no sistema de arquivos especificado pelo caminho `filePath` e retorna um array de bytes que representa o conteúdo do arquivo.
+
+   - Por fim, a função retorna o array de bytes que representa o conteúdo do arquivo.
+
+   - Em resumo, o script `downloadImageFromFileSystem` é uma função Java que é usada para ler um arquivo do sistema de arquivos do servidor e retornar seu conteúdo como um array de bytes. A função recebe um parâmetro `String` chamado `fileName`, que representa o nome do arquivo a ser lido. A função procura o arquivo no banco de dados usando o método `fileDataRepository.findByName(fileName)`, extrai o caminho do arquivo do objeto `FileData` usando o método `fileData.get().getFilePath()`, lê o conteúdo do arquivo usando o método `Files.readAllBytes(new File(filePath).toPath())` e retorna o array de bytes que representa o conteúdo do arquivo.
+
+    ```java
+    public byte[] downloadImageFromFileSystem(String fileName)throws IOException {
+            Optional<FileData> fileData = fileDataRepository.findByName(fileName);
+            String filePath=fileData.get().getFilePath();
+            byte[] images = Files.readAllBytes(new File(filePath).toPath());
+            return images;
+        }
+    ```
+
+   - **Propósito:** Ler um arquivo do sistema de arquivos do servidor e retornar seu conteúdo como um array de bytes.
+   - **Funcionamento:** 
+       - Busca os dados do arquivo no repositório `fileDataRepository` com base no nome do arquivo.
+       - Lê o conteúdo do arquivo como um array de bytes.
+       - Retorna o array de bytes que representa o conteúdo do arquivo.
+
 Esta classe serve como um intermediário entre a camada de controle (provavelmente controladores Spring) e a camada de acesso a dados (repositório de armazenamento). Ele encapsula a lógica de manipulação de imagens, como upload e download, e utiliza a injeção de dependência do Spring para interagir com o repositório de armazenamento.
+
+Esses métodos demonstram a funcionalidade de upload e download de imagens, tanto para armazenamento em um banco de dados quanto no sistema de arquivos do servidor, em um aplicativo Spring Boot. Cada método executa operações específicas para manipular os dados das imagens de acordo com o tipo de armazenamento escolhido.
 
 ---
 
