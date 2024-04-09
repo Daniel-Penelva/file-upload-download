@@ -25,7 +25,7 @@ public class StorageService {
     private FileDataRepository fileDataRepository;
 
     // Caminho onde vai fazer o download do arquivo
-    private final String FOLDER_PATH = "C:/Projetos Spring Boot no VSCode/API-upload-download/MyFiles";
+    private final String FOLDER_PATH = "C:/Projetos Spring Boot no VSCode/API-upload-download/MyFiles/";
 
 
     /*Este método aceita um arquivo de imagem, o comprime, salva-o em um repositório de armazenamento e retorna uma mensagem indicando o status 

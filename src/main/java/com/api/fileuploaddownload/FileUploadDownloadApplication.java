@@ -45,6 +45,26 @@ public class FileUploadDownloadApplication {
 
 	}
 
+
+	// http://localhost:9191/image/fileSystem
+	@PostMapping("/fileSystem")
+	public ResponseEntity<?> uploadImageToFIleSystem(@RequestParam("image")MultipartFile file) throws IOException {
+		String uploadImage = storageService.uploadImageToFileSystem(file);
+		return ResponseEntity.status(HttpStatus.OK)
+				.body(uploadImage);
+	}
+
+
+    // http://localhost:9191/image/fileSystem/{fileName}
+	@GetMapping("/fileSystem/{fileName}")
+	public ResponseEntity<?> downloadImageFromFileSystem(@PathVariable String fileName) throws IOException {
+		byte[] imageData=storageService.downloadImageFromFileSystem(fileName);
+		return ResponseEntity.status(HttpStatus.OK)
+				.contentType(MediaType.valueOf("image/png"))
+				.body(imageData);
+
+	}
+
 	public static void main(String[] args) {
 		SpringApplication.run(FileUploadDownloadApplication.class, args);
 	}
